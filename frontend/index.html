@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicEye AI — Next-Gen Autonomous Municipal Vision Platform</title>
+    <!-- Modern Typography & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Leaflet & Chart Libraries -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        :root {
+            --bg-void: #030712;
+            --bg-surface: rgba(15, 23, 42, 0.75);
+            --bg-surface-elevated: rgba(30, 41, 59, 0.65);
+            --bg-glass-card: rgba(15, 23, 42, 0.6);
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.35);
+            --primary-accent: #38bdf8;
+            --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #2563eb 50%, #7c3aed 100%);
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-pure: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --shadow-elevation: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+            --glow-primary: 0 0 25px rgba(14, 165, 233, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-void);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(124, 58, 237, 0.12) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-pure);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism Navigation */
+        header {
+            background: rgba(3, 7, 18, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .logo-badge {
+            width: 42px;
+            height: 42px;
+            background: var(--primary-gradient);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--glow-primary);
+            color: #ffffff;
+            font-size: 1.25rem;
+        }
+
+        .logo-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 30%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-tag {
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-cyan);
+            display: block;
+            margin-top: -3px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.6rem;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.35rem;
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.65rem 1.35rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .nav-btn:hover {
+            color: var(--text-pure);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-btn.active {
+            background: var(--primary-gradient);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.4);
+        }
+
+        .btn-auth-badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: var(--primary-accent);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .btn-auth-badge:hover {
+            background: rgba(56, 189, 248, 0.2);
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.8), transparent);
+        }
+
+        .hero-content h1 {
+            font-size: 1.45rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.3rem;
+        }
+
+        .hero-content p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .live-pulse-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: var(--accent-emerald);
+            padding: 0.4rem 0.9rem;
+            border-radius: 30px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-emerald);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulseGlow 1.5s infinite alternate;
+        }
+
+        @keyframes pulseGlow {
+            from { transform: scale(0.85); opacity: 0.6; }
+            to { transform: scale(1.25); opacity: 1; }
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .view-section {
+            display: none;
+            animation: modernFade 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes modernFade {
+            from { opacity: 0; transform: translateY(12px) scale(0.99); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            header { padding: 1rem 1.5rem; }
+            main { padding: 1.5rem; }
+        }
+
+        /* Glass Cards */
+        .card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-elevation);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-header {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            letter-spacing: -0.3px;
+        }
+
+        .form-group {
+            margin-bottom: 1.4rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            padding: 0.9rem 1.15rem;
+            background: rgba(3, 7, 18, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            color: var(--text-pure);
+            outline: none;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, textarea:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            background: rgba(3, 7, 18, 0.9);
+        }
+
+        .coords-group {
+            display: flex;
+            gap: 0.85rem;
+        }
+
+        .btn-location {
+            background: var(--bg-surface-elevated);
+            border: 1px solid var(--border-subtle);
+            color: var(--primary-accent);
+            padding: 0.5rem 0.95rem;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-location:hover {
+            border-color: var(--primary-accent);
+            background: rgba(56, 189, 248, 0.12);
+        }
+
+        .voice-btn {
+            background: rgba(14, 165, 233, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: var(--primary-accent);
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.25s ease;
+        }
+
+        .voice-btn:hover {
+            background: rgba(14, 165, 233, 0.25);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.3);
+        }
+
+        .voice-btn.listening {
+            background: rgba(244, 63, 94, 0.25);
+            border-color: var(--accent-rose);
+            color: #ff758f;
+            animation: pulseMic 1.2s infinite alternate;
+        }
+
+        @keyframes pulseMic {
+            from { box-shadow: 0 0 8px rgba(244, 63, 94, 0.4); }
+            to { box-shadow: 0 0 22px rgba(244, 63, 94, 0.9); }
+        }
+
+        .file-upload-box {
+            border: 2px dashed rgba(56, 189, 248, 0.35);
+            padding: 2.2rem 1.5rem;
+            border-radius: 14px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(3, 7, 18, 0.4);
+            position: relative;
+            transition: all 0.25s ease;
+        }
+
+        .file-upload-box:hover {
+            border-color: var(--primary-accent);
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        .file-upload-box input[type="file"] {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 1.05rem;
+            font-size: 1rem;
+            font-weight: 800;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.65rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.35);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(14, 165, 233, 0.5);
+        }
+
+        .btn-primary:disabled { opacity: 0.65; cursor: not-allowed; }
+
+        .image-preview-container {
+            width: 100%;
+            height: 290px;
+            background: #020617;
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 1.4rem;
+            position: relative;
+        }
+
+        .image-preview-container img {
+            width: 100%; height: 100%; object-fit: contain;
+        }
+
+        .detection-meta {
+            background: rgba(3, 7, 18, 0.65);
+            padding: 1.35rem;
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        .meta-row:last-child { border-bottom: none; }
+        .meta-label { color: var(--text-secondary); font-weight: 600; }
+        .meta-val { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+
+        .badge {
+            padding: 0.3rem 0.85rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-high { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.4); }
+        .badge-medium { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .badge-low { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.4); }
+
+        .status-pill {
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 0.3rem 0.75rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .status-reported { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid var(--accent-rose); }
+        .status-processing { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid var(--accent-amber); }
+        .status-resolved { background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border: 1px solid var(--accent-emerald); }
+
+        .sla-tag {
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .sla-safe { background: rgba(56, 189, 248, 0.15); color: var(--primary-accent); border: 1px solid rgba(56, 189, 248, 0.4); }
+        .sla-warning { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .sla-breached {
+            background: rgba(244, 63, 94, 0.25);
+            color: #ff4d6d;
+            border: 1px solid var(--accent-rose);
+            animation: pulseBreach 1.2s infinite alternate;
+        }
+        @keyframes pulseBreach {
+            from { box-shadow: 0 0 5px rgba(244, 63, 94, 0.4); }
+            to { box-shadow: 0 0 18px rgba(244, 63, 94, 0.9); }
+        }
+
+        /* KPI Dashboard Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 1.4rem;
+            margin-bottom: 2.2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            padding: 1.6rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--border-subtle);
+            transition: 0.25s all;
+        }
+
+        .stat-card.active-kpi {
+            border-color: var(--primary-accent);
+            background: var(--bg-surface-elevated);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-card.active-kpi::before { background: var(--primary-accent); }
+
+        .stat-card .num {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-top: 0.4rem;
+            letter-spacing: -1px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .dashboard-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .view-mode-toggle {
+            display: flex;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.3rem;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.55rem 1.15rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .toggle-btn.active {
+            background: var(--primary-accent);
+            color: #030712;
+            box-shadow: 0 2px 12px rgba(56, 189, 248, 0.4);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 0.5rem 1.15rem;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: 0.2s all;
+        }
+
+        .filter-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+
+        .filter-btn.active {
+            background: var(--primary-gradient);
+            color: #fff;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(14, 165, 233, 0.35);
+        }
+
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.35fr;
+            gap: 1.75rem;
+            margin-bottom: 2.2rem;
+            display: none;
+        }
+
+        @media (max-width: 960px) {
+            .analytics-grid { grid-template-columns: 1fr; }
+        }
+
+        .chart-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            height: 380px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-elevation);
+        }
+
+        .chart-box h4 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--primary-accent);
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        #heatmapContainer {
+            width: 100%;
+            height: 560px;
+            background: #020617;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            margin-bottom: 2.2rem;
+            overflow: hidden;
+            display: none;
+            box-shadow: var(--shadow-elevation);
+        }
+
+        .dark-tiles {
+            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
+        }
+
+        .issues-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.6rem;
+        }
+
+        .issue-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow-elevation);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .issue-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 25px 45px -10px rgba(0, 0, 0, 0.8);
+        }
+
+        .issue-card-img-wrap {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: #020617;
+        }
+
+        .issue-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .issue-card-body {
+            padding: 1.35rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            flex: 1;
+        }
+
+        .issue-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .issue-loc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            line-height: 1.4;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.6rem;
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 0.65rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 800;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            transition: all 0.25s ease;
+        }
+
+        .btn-action-process {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-action-process:hover { background: var(--accent-amber); color: #000; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+
+        .btn-action-resolve {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-action-resolve:hover { background: var(--accent-emerald); color: #fff; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+
+        .btn-action-completed {
+            background: rgba(255, 255, 255, 0.05);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            cursor: default;
+        }
+
+        .btn-action-pdf {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary-accent);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        .btn-action-pdf:hover { background: var(--primary-accent); color: #000; }
+
+        .timeline-container {
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            margin: 2.5rem 0 1.5rem 0;
+        }
+
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: var(--border-subtle);
+            z-index: 1;
+        }
+
+        .timeline-progress-bar {
+            position: absolute;
+            top: 24px;
+            left: 10%;
+            height: 4px;
+            background: var(--primary-accent);
+            box-shadow: 0 0 15px var(--primary-accent);
+            z-index: 2;
+            transition: width 0.4s ease;
+        }
+
+        .timeline-step {
+            position: relative;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+        }
+
+        .step-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--bg-surface-elevated);
+            border: 3px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            color: var(--text-dim);
+            transition: all 0.3s ease;
+        }
+
+        .timeline-step.active .step-icon {
+            border-color: var(--primary-accent);
+            color: #fff;
+            background: var(--primary-gradient);
+            box-shadow: var(--glow-primary);
+        }
+
+        .timeline-step.completed .step-icon {
+            border-color: var(--accent-emerald);
+            color: #fff;
+            background: var(--accent-emerald);
+        }
+
+        .step-title { margin-top: 0.7rem; font-size: 0.92rem; font-weight: 800; }
+        .step-desc { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: modernFade 0.25s ease-in-out;
+        }
+
+        .modal-box {
+            background: #0f172a;
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius-lg);
+            width: 90%;
+            max-width: 520px;
+            padding: 2rem;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+        }
+
+        .modal-header {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.35rem;
+            cursor: pointer;
+        }
+
+        .before-after-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-top: 0.6rem;
+            background: rgba(3, 7, 18, 0.7);
+            padding: 0.6rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .before-after-col { text-align: center; }
+        .before-after-col img {
+            width: 100%;
+            height: 95px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .before-after-tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            margin-top: 0.35rem;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        .alert-toast {
+            position: fixed;
+            top: 90px;
+            right: 25px;
+            background: linear-gradient(135deg, #e11d48, #be123c);
+            color: #fff;
+            padding: 1.15rem 1.4rem;
+            border-radius: 14px;
+            box-shadow: 0 15px 40px rgba(225, 29, 72, 0.6);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            gap: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideIn 0.35s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .rbac-bar {
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.15), rgba(124, 58, 237, 0.12));
+            border: 1px solid var(--border-subtle);
+            border-radius: 14px;
+            padding: 1.1rem 1.6rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="alertToast" class="alert-toast">
+        <i class="fa-solid fa-triangle-exclamation fa-shake" style="font-size: 1.6rem;"></i>
+        <div>
+            <strong style="font-size: 0.95rem; display: block; letter-spacing: 0.5px;">EMERGENCY CIVIC ALERT DISPATCHED</strong>
+            <span id="toastMsg" style="font-size: 0.82rem; opacity: 0.95;">Hazard escalated to Municipal Quick Response Unit.</span>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo-wrapper" onclick="switchView('report')">
+            <div class="logo-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+                <div class="logo-title">CivicEye AI</div>
+                <span class="logo-tag">Autonomous Smart City Vision</span>
+            </div>
+        </div>
+        <div class="nav-tabs">
+            <button class="nav-btn active" id="tabReport" onclick="switchView('report')">
+                <i class="fa-solid fa-camera"></i> Report Issue
+            </button>
+            <button class="nav-btn" id="tabTrack" onclick="switchView('track')">
+                <i class="fa-solid fa-magnifying-glass-location"></i> Track Ticket
+            </button>
+            <button class="nav-btn" id="tabDashboard" onclick="switchView('dashboard')">
+                <i class="fa-solid fa-chart-pie"></i> Authority Dashboard
+            </button>
+        </div>
+        <button class="btn-auth-badge" id="btnOfficerLogin" onclick="openLoginModal()">
+            <i class="fa-solid fa-user-shield"></i> <span id="authBadgeText">Officer Login</span>
+        </button>
+    </header>
+
+    <main>
+        <!-- Hero Status Banner -->
+        <div class="hero-banner">
+            <div class="hero-content">
+                <h1>AI-Powered Civic Incident Operations</h1>
+                <p>Real-time CLIP + YOLOv8 hazard localization, dynamic SLA countdowns & verified resolution audit.</p>
+            </div>
+            <div class="live-pulse-badge">
+                <div class="pulse-dot"></div> Edge AI Engine Active
+            </div>
+        </div>
+
+        <!-- VIEW 1: REPORT ISSUE -->
+        <section id="viewReport" class="view-section active">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-amber);"></i> Log Hazard Incident
+                    </div>
+                    <form id="reportForm">
+                        <div class="form-group">
+                            <label>Hazard Visual Evidence</label>
+                            <div class="file-upload-box">
+                                <input type="file" id="photoInput" accept="image/*" required>
+                                <i class="fa-solid fa-cloud-arrow-up" style="font-size: 2.4rem; color: var(--primary-accent); margin-bottom: 0.6rem; display: block;"></i>
+                                <p id="uploadLabel" style="font-size: 0.92rem; color: var(--text-secondary); font-weight: 600;">Click or drag photo here for Vision AI audit</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label>GPS Geo-Coordinates</label>
+                                <button type="button" class="btn-location" onclick="getLocation()">
+                                    <i class="fa-solid fa-location-crosshairs"></i> Get Current Location
+                                </button>
+                            </div>
+                            <div class="coords-group">
+                                <input type="text" id="latInput" placeholder="Latitude" value="16.826907" required>
+                                <input type="text" id="lonInput" placeholder="Longitude" value="78.138678" required>
+                            </div>
+                        </div>
+
+                        <!-- Voice-to-Text Remarks Group -->
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <label style="margin-bottom: 0;">Citizen Remarks</label>
+                                <button type="button" id="btnVoiceRecord" class="voice-btn" onclick="toggleVoiceRecording()">
+                                    <i class="fa-solid fa-microphone" id="micIcon"></i> <span id="voiceStatusText">Speak Note (Voice AI)</span>
+                                </button>
+                            </div>
+                            <textarea id="descInput" rows="2" placeholder="Click 'Speak Note' to speak in Hindi/English, or type incident details..."></textarea>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="btn-primary">
+                            <i class="fa-solid fa-microchip"></i> Execute AI Analysis & Dispatch
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-brain" style="color: var(--primary-accent);"></i> AI Detection Diagnostics
+                    </div>
+                    
+                    <div class="image-preview-container">
+                        <img id="resultImage" src="" alt="Detection Output" style="display: none;">
+                        <span id="previewPlaceholder" style="color: var(--text-dim); font-size: 0.92rem; text-align: center;">
+                            <i class="fa-regular fa-image" style="font-size: 3rem; display: block; margin-bottom: 0.8rem; color: var(--border-subtle);"></i>
+                            Localized AI Bounding Box Output will render here
+                        </span>
+                    </div>
+
+                    <div class="detection-meta">
+                        <div class="meta-row">
+                            <span class="meta-label">Incident Ticket ID</span>
+                            <span class="meta-val" id="generatedTicketId" style="color: var(--primary-accent);">--</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Detected Category</span>
+                            <span class="meta-val" id="detectedCategory" style="color: #fff;">Awaiting input...</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Vision Confidence</span>
+                            <span class="meta-val" id="detectedConfidence">--%</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Priority Matrix</span>
+                            <span id="detectedPriority" class="badge badge-low">NONE</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Resolution SLA Window</span>
+                            <span id="detectedSla" class="sla-tag sla-safe">-- Hours</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="meta-label">Spatial Address</span>
+                            <span class="meta-val" id="detectedAddress" style="max-width: 60%; text-align: right; font-size: 0.8rem; color: var(--text-secondary);">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: CITIZEN TICKET TRACKING PORTAL -->
+        <section id="viewTrack" class="view-section">
+            <div class="card" style="max-width: 900px; margin: 0 auto;">
+                <div class="card-header">
+                    <i class="fa-solid fa-route" style="color: var(--primary-accent);"></i> Citizen Ticket Resolution Timeline
+                </div>
+
+                <div style="display: flex; gap: 0.85rem; margin-bottom: 2rem;">
+                    <input type="text" id="trackInput" placeholder="Enter Incident ID (e.g. 1, 5, 23, or CIVIC-23)" style="flex: 1;">
+                    <button class="btn-primary" style="width: auto; padding: 0 1.8rem;" onclick="trackTicket()">
+                        <i class="fa-solid fa-magnifying-glass"></i> Track Status
+                    </button>
+                </div>
+
+                <div id="timelineCard" style="display: none; border-top: 1px solid var(--border-subtle); padding-top: 2rem;">
+                    <div class="timeline-container">
+                        <div class="timeline-progress-bar" id="timelineBar" style="width: 0%;"></div>
+                        <div class="timeline-step" id="step1">
+                            <div class="step-icon"><i class="fa-solid fa-camera"></i></div>
+                            <div class="step-title">Reported</div>
+                            <div class="step-desc" id="step1Time">Incident Logged</div>
+                        </div>
+                        <div class="timeline-step" id="step2">
+                            <div class="step-icon"><i class="fa-solid fa-bolt"></i></div>
+                            <div class="step-title">In Progress</div>
+                            <div class="step-desc">Field Team Active</div>
+                        </div>
+                        <div class="timeline-step" id="step3">
+                            <div class="step-icon"><i class="fa-solid fa-check-double"></i></div>
+                            <div class="step-title">Resolved</div>
+                            <div class="step-desc">AI Verified</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: var(--bg-surface-elevated); margin-top: 2.2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3 id="trackCategory" style="font-size: 1.15rem; color: #fff;">--</h3>
+                            <div style="display: flex; gap: 0.6rem; align-items: center;">
+                                <span id="trackSlaBadge" class="sla-tag sla-safe">--</span>
+                                <span id="trackPriority" class="badge badge-low">--</span>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.6rem;"><i class="fa-solid fa-location-dot" style="color: var(--primary-accent);"></i> <span id="trackAddress">--</span></p>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;"><i class="fa-regular fa-clock"></i> Logged On: <span id="trackDate">--</span></p>
+
+                        <div id="trackBeforeAfterBox" style="display: none;">
+                            <label style="color: var(--primary-accent); font-size: 0.8rem; margin-bottom: 0.5rem; display: block;">AI Verified Resolution Comparison</label>
+                            <div class="before-after-grid">
+                                <div class="before-after-col">
+                                    <img id="trackImgBefore" src="" alt="Before">
+                                    <span class="before-after-tag" style="color: var(--accent-rose);">Before (Hazard)</span>
+                                </div>
+                                <div class="before-after-col">
+                                    <img id="trackImgAfter" src="" alt="After">
+                                    <span class="before-after-tag" style="color: var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> Cleaned & Verified</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: AUTHORITY DASHBOARD -->
+        <section id="viewDashboard" class="view-section">
+            
+            <div class="rbac-bar">
+                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <i class="fa-solid fa-id-badge" style="font-size: 1.5rem; color: var(--primary-accent);"></i>
+                    <div>
+                        <strong id="loggedOfficerName" style="color: #fff; font-size: 1rem;">Active Console: Public View (All Municipal Sectors)</strong>
+                        <span id="loggedOfficerDept" style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">Sign in as an authorized municipal engineer to unlock ground operations routing controls</span>
+                    </div>
+                </div>
+                <button class="btn-action btn-action-pdf" id="btnLogout" onclick="logoutOfficer()" style="display: none; max-width: 120px; padding: 0.6rem 1rem;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card active-kpi" id="cardTotal" onclick="filterByStat('ALL', this)">
+                    <span class="meta-label">Total Reported</span>
+                    <div class="num" id="statTotal">0</div>
+                </div>
+                <div class="stat-card" id="cardHigh" onclick="filterByStat('High', this)">
+                    <span class="meta-label" style="color: var(--accent-rose);">High Hazards</span>
+                    <div class="num" id="statHigh" style="color: var(--accent-rose);">0</div>
+                </div>
+                <div class="stat-card" id="cardBreached" onclick="filterByStat('Breached', this)">
+                    <span class="meta-label" style="color: #ff4d6d;">SLA Breached</span>
+                    <div class="num" id="statBreached" style="color: #ff4d6d;">0</div>
+                </div>
+                <div class="stat-card" id="cardResolved" onclick="filterByStat('Resolved', this)">
+                    <span class="meta-label" style="color: var(--accent-emerald);">Resolved</span>
+                    <div class="num" id="statResolved" style="color: var(--accent-emerald);">0</div>
+                </div>
+            </div>
+
+            <div class="dashboard-header-flex">
+                <div class="filter-bar">
+                    <button class="filter-btn active" id="btnFilterAll" onclick="filterIssues('ALL', this)">All Incidents</button>
+                    <button class="filter-btn" onclick="filterIssues('High', this)">🔥 High Priority</button>
+                    <button class="filter-btn" onclick="filterIssues('Breached', this)">🚨 SLA Breached</button>
+                    <button class="filter-btn" onclick="filterIssues('Pothole', this)">Potholes</button>
+                    <button class="filter-btn" onclick="filterIssues('Garbage', this)">Garbage</button>
+                    <button class="filter-btn" onclick="filterIssues('Tree', this)">Fallen Trees</button>
+                    <button class="filter-btn" onclick="filterIssues('Manhole', this)">Open Manholes</button>
+                </div>
+
+                <div class="view-mode-toggle">
+                    <button class="toggle-btn active" id="btnViewGrid" onclick="toggleDashboardView('grid')">
+                        <i class="fa-solid fa-table-cells-large"></i> Grid Cards
+                    </button>
+                    <button class="toggle-btn" id="btnViewAnalytics" onclick="toggleDashboardView('analytics')">
+                        <i class="fa-solid fa-chart-column"></i> Analytics Charts
+                    </button>
+                    <button class="toggle-btn" id="btnViewMap" onclick="toggleDashboardView('map')">
+                        <i class="fa-solid fa-map-location-dot"></i> GIS Heatmap
+                    </button>
+                </div>
+            </div>
+
+            <!-- ANALYTICS CHARTS SECTION -->
+            <div class="analytics-grid" id="analyticsGridSection">
+                <div class="chart-box">
+                    <h4><i class="fa-solid fa-chart-pie"></i> Category Distribution</h4>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h4><i class="fa-solid fa-chart-bar"></i> Resolution & SLA Health Metrics</h4>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="heatmapContainer"></div>
+            <div class="issues-grid" id="issuesListContainer"></div>
+        </section>
+    </main>
+
+    <!-- Modal for Officer Login -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span style="color: var(--primary-accent);"><i class="fa-solid fa-user-shield"></i> Municipal Officer Authentication</span>
+                <button class="close-btn" onclick="closeLoginModal()">×</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+                Sign in to your designated municipal department account (PWD, Sanitation, Disaster/Sewerage, or Commissioner).
+            </p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Officer Username</label>
+                    <input type="text" id="loginUser" placeholder="e.g. admin, pwd_officer, sanitation_officer" required>
+                </div>
+                <div class="form-group">
+                    <label>Access Key / Password</label>
+                    <input type="password" id="loginPass" placeholder="••••••••" required>
+                </div>
+                <div style="background: rgba(255,255,255,0.04); padding: 10px 14px; border-radius: 8px; font-size: 11px; margin-bottom: 1.4rem; color: #94a3b8; line-height: 1.6;">
+                    <strong>Municipal Credentials:</strong><br>
+                    • PWD Roads: <code>pwd_officer</code> / <code>pwd123</code><br>
+                    • Sanitation: <code>sanitation_officer</code> / <code>clean123</code><br>
+                    • Disaster / Sewerage: <code>emergency_officer</code> / <code>alert123</code><br>
+                    • Super Admin: <code>admin</code> / <code>admin123</code>
+                </div>
+                <button type="submit" id="btnLoginSubmit" class="btn-primary">
+                    <i class="fa-solid fa-lock-open"></i> Authenticate & Route Console
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Resolution Photo Verification -->
+    <div class="modal-overlay" id="resolveModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span style="color: var(--accent-emerald);"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Resolution Verification Audit</span>
+                <button class="close-btn" onclick="closeResolveModal()">×</button>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.4rem;">
+                Upload the ground verification photo after hazard removal. Vision AI will audit the spot before marking status as <strong>Resolved</strong>.
+            </p>
+            <form id="resolveForm">
+                <input type="hidden" id="resolveIssueId">
+                <div class="form-group">
+                    <div class="file-upload-box">
+                        <input type="file" id="resolvePhotoInput" accept="image/*" required>
+                        <i class="fa-solid fa-shield-check" style="font-size: 2.4rem; color: var(--accent-emerald); margin-bottom: 0.5rem; display: block;"></i>
+                        <p id="resolveUploadLabel" style="font-size: 0.88rem; color: var(--text-secondary);">Select After-Fix photo</p>
+                    </div>
+                </div>
+                <button type="submit" id="btnSubmitResolve" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="fa-solid fa-microchip"></i> Run AI Audit & Resolve Ticket
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script>
+        const API_BASE = "";
+        let allIssuesData = [];
+        let activeFilter = 'ALL';
+        let currentViewMode = 'grid';
+        let mapInstance = null;
+        let heatLayer = null;
+        let markersLayer = null;
+        let currentOfficer = null;
+        let categoryChartInstance = null;
+        let statusChartInstance = null;
+        let recognition = null;
+        let isListening = false;
+
+        function initVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                console.warn("Speech recognition not supported in this browser.");
+                return null;
+            }
+
+            const rec = new SpeechRecognition();
+            rec.continuous = false;
+            rec.interimResults = false;
+            rec.lang = 'hi-IN';
+
+            rec.onstart = () => {
+                isListening = true;
+                const btn = document.getElementById("btnVoiceRecord");
+                btn.classList.add("listening");
+                document.getElementById("voiceStatusText").innerText = "Listening... Boliyen";
+                document.getElementById("micIcon").className = "fa-solid fa-microphone-lines fa-fade";
+            };
+
+            rec.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const descBox = document.getElementById("descInput");
+                descBox.value = descBox.value ? `${descBox.value} ${transcript}` : transcript;
+            };
+
+            rec.onerror = (event) => {
+                console.error("Speech Recognition Error:", event.error);
+                stopVoiceRecording();
+            };
+
+            rec.onend = () => {
+                stopVoiceRecording();
+            };
+
+            return rec;
+        }
+
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                recognition = initVoiceRecognition();
+                if (!recognition) {
+                    alert("Voice recognition is not supported in this browser. Please use Chrome/Edge.");
+                    return;
+                }
+            }
+
+            if (isListening) {
+                recognition.stop();
+                stopVoiceRecording();
+            } else {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    recognition.stop();
+                }
+            }
+        }
+
+        function stopVoiceRecording() {
+            isListening = false;
+            const btn = document.getElementById("btnVoiceRecord");
+            btn.classList.remove("listening");
+            document.getElementById("voiceStatusText").innerText = "Speak Note (Voice AI)";
+            document.getElementById("micIcon").className = "fa-solid fa-microphone";
+        }
+
+        function computeSLAStatus(createdAtIso, slaHours, currentStatus) {
+            if (currentStatus === 'Resolved') {
+                return { text: "SLA Met", class: "sla-safe", breached: false };
+            }
+
+            const createdTime = new Date(createdAtIso).getTime();
+            const deadlineTime = createdTime + (slaHours * 60 * 60 * 1000);
+            const now = new Date().getTime();
+            const diffMs = deadlineTime - now;
+
+            if (diffMs <= 0) {
+                return { text: "🚨 SLA Breached", class: "sla-breached", breached: true };
+            }
+
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+            const isLow = hours < 6;
+            return {
+                text: `⏳ ${hours}h ${minutes}m left`,
+                class: isLow ? "sla-warning" : "sla-safe",
+                breached: false
+            };
+        }
+
+        function playEmergencySiren() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.3);
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.6);
+
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.8);
+            } catch (e) {
+                console.log("Audio alert blocked until user gesture.");
+            }
+        }
+
+        function triggerAlertBanner(msg) {
+            const toast = document.getElementById("alertToast");
+            document.getElementById("toastMsg").innerText = msg;
+            toast.style.display = "flex";
+            playEmergencySiren();
+            setTimeout(() => { toast.style.display = "none"; }, 5000);
+        }
+
+        function switchView(viewName) {
+            document.getElementById("viewReport").classList.toggle("active", viewName === "report");
+            document.getElementById("viewTrack").classList.toggle("active", viewName === "track");
+            document.getElementById("viewDashboard").classList.toggle("active", viewName === "dashboard");
+
+            document.getElementById("tabReport").classList.toggle("active", viewName === "report");
+            document.getElementById("tabTrack").classList.toggle("active", viewName === "track");
+            document.getElementById("tabDashboard").classList.toggle("active", viewName === "dashboard");
+
+            if (viewName === "dashboard") {
+                fetchDashboardIssues();
+            }
+        }
+
+        const photoInput = document.getElementById("photoInput");
+        photoInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                document.getElementById("uploadLabel").innerText = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const resultImg = document.getElementById("resultImage");
+                    resultImg.src = event.target.result;
+                    resultImg.style.display = "block";
+                    document.getElementById("previewPlaceholder").style.display = "none";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        const resolvePhotoInput = document.getElementById("resolvePhotoInput");
+        resolvePhotoInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                document.getElementById("resolveUploadLabel").innerText = e.target.files[0].name;
+            }
+        });
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById("latInput").value = position.coords.latitude.toFixed(6);
+                        document.getElementById("lonInput").value = position.coords.longitude.toFixed(6);
+                    },
+                    () => {
+                        alert("Could not fetch location automatically. Defaulted to coordinates.");
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        const reportForm = document.getElementById("reportForm");
+        reportForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const file = photoInput.files[0];
+            if (!file) {
+                alert("Please select or capture a photo first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("image", file);
+            formData.append("latitude", document.getElementById("latInput").value || "16.826907");
+            formData.append("longitude", document.getElementById("lonInput").value || "78.138678");
+            formData.append("description", document.getElementById("descInput").value || "");
+
+            const submitBtn = document.getElementById("submitBtn");
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analyzing with Vision AI...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/report`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.detail || `Server error ${res.status}`);
+                }
+
+                const data = await res.json();
+                document.getElementById("generatedTicketId").innerText = `CIVIC-${data.issue_id}`;
+                document.getElementById("detectedCategory").innerText = data.category || "Road Normal / No Major Hazard";
+                const confPercent = Math.round((Number(data.confidence) || 0) * 100);
+                document.getElementById("detectedConfidence").innerText = `${confPercent}%`;
+
+                const priority = (data.priority || "Low").toUpperCase();
+                const badge = document.getElementById("detectedPriority");
+                badge.innerText = priority;
+                badge.className = `badge badge-${priority.toLowerCase()}`;
+
+                document.getElementById("detectedSla").innerText = `${data.sla_hours || 48} Hours Standard SLA`;
+                document.getElementById("detectedAddress").innerText = data.address || `${document.getElementById("latInput").value}, ${document.getElementById("lonInput").value}`;
+
+                if (data.annotated_image_path) {
+                    const resultImg = document.getElementById("resultImage");
+                    resultImg.src = `${API_BASE}/${data.annotated_image_path}?t=${new Date().getTime()}`;
+                    resultImg.style.display = "block";
+                    document.getElementById("previewPlaceholder").style.display = "none";
+                }
+
+                if (data.is_duplicate) {
+                    alert(`🔄 Spatial Duplication Detected!\n${data.message}`);
+                } else if (priority === "HIGH") {
+                    triggerAlertBanner(`High Hazard (#CIVIC-${data.issue_id}) automatically dispatched to Municipal Quick-Response Team!`);
+                }
+            } catch (err) {
+                alert("Submission failed: " + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-microchip"></i> Execute AI Analysis & Dispatch';
+            }
+        });
+
+        function openLoginModal() {
+            if (currentOfficer) {
+                alert(`Already logged in as ${currentOfficer.department}`);
+                return;
+            }
+            document.getElementById("loginModal").style.display = "flex";
+        }
+
+        function closeLoginModal() {
+            document.getElementById("loginModal").style.display = "none";
+        }
+
+        const loginForm = document.getElementById("loginForm");
+        loginForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const username = document.getElementById("loginUser").value;
+            const password = document.getElementById("loginPass").value;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Authentication Failed");
+                }
+
+                currentOfficer = await res.json();
+                closeLoginModal();
+
+                document.getElementById("authBadgeText").innerText = currentOfficer.username;
+                document.getElementById("loggedOfficerName").innerText = `Console: ${currentOfficer.department}`;
+                document.getElementById("loggedOfficerDept").innerText = `Role: ${currentOfficer.role} | Routing Scope: ${currentOfficer.allowed_scope}`;
+                document.getElementById("btnLogout").style.display = "inline-flex";
+
+                switchView('dashboard');
+            } catch (err) {
+                alert("Login Error: " + err.message);
+            }
+        });
+
+        function logoutOfficer() {
+            currentOfficer = null;
+            document.getElementById("authBadgeText").innerText = "Officer Login";
+            document.getElementById("loggedOfficerName").innerText = "Active Console: Public View (All Municipal Sectors)";
+            document.getElementById("loggedOfficerDept").innerText = "Sign in as an authorized municipal engineer to unlock ground operations routing controls";
+            document.getElementById("btnLogout").style.display = "none";
+            fetchDashboardIssues();
+        }
+
+        async function trackTicket() {
+            const rawId = document.getElementById("trackInput").value.trim();
+            const cleanId = rawId.replace(/\D/g, '');
+
+            if (!cleanId) {
+                alert("Please enter a valid ticket number (e.g. 1, 23 or CIVIC-23)");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/issues/${cleanId}`);
+                if (!res.ok) {
+                    alert("Ticket not found. Please verify the ID.");
+                    return;
+                }
+
+                const issue = await res.json();
+                document.getElementById("timelineCard").style.display = "block";
+                document.getElementById("trackCategory").innerText = `Ticket #CIVIC-${issue.id}: ${issue.category}`;
+                document.getElementById("trackPriority").innerText = issue.priority;
+                document.getElementById("trackPriority").className = `badge badge-${(issue.priority || 'low').toLowerCase()}`;
+                document.getElementById("trackAddress").innerText = issue.address || `${issue.latitude}, ${issue.longitude}`;
+                document.getElementById("trackDate").innerText = issue.created_at;
+
+                const sla = computeSLAStatus(issue.created_at_iso, issue.sla_hours || 48, issue.status);
+                const slaBadge = document.getElementById("trackSlaBadge");
+                slaBadge.innerText = sla.text;
+                slaBadge.className = `sla-tag ${sla.class}`;
+
+                const s1 = document.getElementById("step1");
+                const s2 = document.getElementById("step2");
+                const s3 = document.getElementById("step3");
+                const bar = document.getElementById("timelineBar");
+
+                s1.className = "timeline-step active";
+                s2.className = "timeline-step";
+                s3.className = "timeline-step";
+                bar.style.width = "0%";
+
+                const baBox = document.getElementById("trackBeforeAfterBox");
+
+                if (issue.status === "Processing" || issue.status === "In Progress") {
+                    s1.className = "timeline-step completed";
+                    s2.className = "timeline-step active";
+                    bar.style.width = "50%";
+                    baBox.style.display = "none";
+                } else if (issue.status === "Resolved") {
+                    s1.className = "timeline-step completed";
+                    s2.className = "timeline-step completed";
+                    s3.className = "timeline-step completed";
+                    bar.style.width = "100%";
+
+                    if (issue.resolved_image_path) {
+                        baBox.style.display = "block";
+                        document.getElementById("trackImgBefore").src = `/${issue.annotated_image_path || issue.image_path}`;
+                        document.getElementById("trackImgAfter").src = `/${issue.resolved_image_path}`;
+                    } else {
+                        baBox.style.display = "none";
+                    }
+                } else {
+                    baBox.style.display = "none";
+                }
+            } catch (e) {
+                alert("Could not fetch ticket details.");
+            }
+        }
+
+        async function fetchDashboardIssues() {
+            try {
+                const res = await fetch(`${API_BASE}/api/issues`);
+                if (!res.ok) throw new Error("Failed to fetch dashboard records");
+                let data = await res.json();
+
+                if (currentOfficer && currentOfficer.allowed_scope !== "ALL") {
+                    if (currentOfficer.allowed_scope === "Emergency") {
+                        data = data.filter(i => ["Fallen Tree", "Open Manhole", "Water Leakage"].includes(i.category));
+                    } else {
+                        data = data.filter(i => i.category.toLowerCase().includes(currentOfficer.allowed_scope.toLowerCase()));
+                    }
+                }
+
+                allIssuesData = data;
+                updateStats(allIssuesData);
+                applyCurrentFilter();
+            } catch (err) {
+                console.error("Dashboard error:", err);
+            }
+        }
+
+        function updateStats(issues) {
+            document.getElementById("statTotal").innerText = issues.length;
+            document.getElementById("statHigh").innerText = issues.filter(i => (i.priority || '').toLowerCase() === 'high' && i.status !== 'Resolved').length;
+            
+            const breachedCount = issues.filter(i => {
+                const sla = computeSLAStatus(i.created_at_iso, i.sla_hours || 48, i.status);
+                return sla.breached;
+            }).length;
+            document.getElementById("statBreached").innerText = breachedCount;
+            document.getElementById("statResolved").innerText = issues.filter(i => (i.status || '').toLowerCase() === 'resolved').length;
+        }
+
+        function filterByStat(statType, element) {
+            document.querySelectorAll(".stat-card").forEach(c => c.classList.remove("active-kpi"));
+            if (element) element.classList.add("active-kpi");
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            activeFilter = statType;
+            applyCurrentFilter();
+        }
+
+        function filterIssues(categoryKey, btn) {
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            if (btn) btn.classList.add("active");
+            document.querySelectorAll(".stat-card").forEach(c => c.classList.remove("active-kpi"));
+            activeFilter = categoryKey;
+            applyCurrentFilter();
+        }
+
+        function applyCurrentFilter() {
+            let filtered = allIssuesData;
+            if (activeFilter === 'High') {
+                filtered = allIssuesData.filter(i => (i.priority || '').toLowerCase() === 'high' && (i.status || '') !== 'Resolved');
+            } else if (activeFilter === 'Breached') {
+                filtered = allIssuesData.filter(i => computeSLAStatus(i.created_at_iso, i.sla_hours || 48, i.status).breached);
+            } else if (activeFilter === 'Resolved') {
+                filtered = allIssuesData.filter(i => (i.status || '').toLowerCase() === 'resolved');
+            } else if (activeFilter !== 'ALL') {
+                filtered = allIssuesData.filter(i => (i.category || '').toLowerCase().includes(activeFilter.toLowerCase()));
+            }
+
+            renderDashboard(filtered);
+            if (currentViewMode === 'map') {
+                renderHeatmap(filtered);
+            } else if (currentViewMode === 'analytics') {
+                renderCharts(filtered);
+            }
+        }
+
+        function toggleDashboardView(mode) {
+            currentViewMode = mode;
+            document.getElementById("btnViewGrid").classList.toggle("active", mode === 'grid');
+            document.getElementById("btnViewAnalytics").classList.toggle("active", mode === 'analytics');
+            document.getElementById("btnViewMap").classList.toggle("active", mode === 'map');
+            
+            const mapDiv = document.getElementById("heatmapContainer");
+            const gridDiv = document.getElementById("issuesListContainer");
+            const analyticsDiv = document.getElementById("analyticsGridSection");
+
+            let filtered = allIssuesData;
+            if (activeFilter === 'High') filtered = allIssuesData.filter(i => (i.priority || '').toLowerCase() === 'high');
+            else if (activeFilter !== 'ALL') filtered = allIssuesData.filter(i => (i.category || '').toLowerCase().includes(activeFilter.toLowerCase()));
+
+            if (mode === 'map') {
+                mapDiv.style.display = "block";
+                gridDiv.style.display = "none";
+                analyticsDiv.style.display = "none";
+                renderHeatmap(filtered);
+            } else if (mode === 'analytics') {
+                mapDiv.style.display = "none";
+                gridDiv.style.display = "none";
+                analyticsDiv.style.display = "grid";
+                renderCharts(filtered);
+            } else {
+                mapDiv.style.display = "none";
+                gridDiv.style.display = "grid";
+                analyticsDiv.style.display = "none";
+            }
+        }
+
+        function renderCharts(issues) {
+            const categoryCounts = {};
+            issues.forEach(i => {
+                const cat = i.category || "Unclassified";
+                categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+            });
+
+            const catLabels = Object.keys(categoryCounts);
+            const catData = Object.values(categoryCounts);
+
+            const catCtx = document.getElementById("categoryChart").getContext("2d");
+            if (categoryChartInstance) categoryChartInstance.destroy();
+
+            categoryChartInstance = new Chart(catCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels.length ? catLabels : ['No Data'],
+                    datasets: [{
+                        data: catData.length ? catData : [1],
+                        backgroundColor: ['#f43f5e', '#f59e0b', '#38bdf8', '#10b981', '#a855f7', '#ec4899'],
+                        borderWidth: 2,
+                        borderColor: '#0f172a'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 12, family: 'Plus Jakarta Sans' } } }
+                    }
+                }
+            });
+
+            const reportedCount = issues.filter(i => (i.status || 'Reported') === 'Reported').length;
+            const inProgressCount = issues.filter(i => i.status === 'In Progress' || i.status === 'Processing').length;
+            const resolvedCount = issues.filter(i => i.status === 'Resolved').length;
+            const breachedCount = issues.filter(i => computeSLAStatus(i.created_at_iso, i.sla_hours || 48, i.status).breached).length;
+
+            const statusCtx = document.getElementById("statusChart").getContext("2d");
+            if (statusChartInstance) statusChartInstance.destroy();
+
+            statusChartInstance = new Chart(statusCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Reported', 'In Progress', 'Resolved', '🚨 SLA Breached'],
+                    datasets: [{
+                        label: 'Incidents Count',
+                        data: [reportedCount, inProgressCount, resolvedCount, breachedCount],
+                        backgroundColor: ['#f43f5e', '#fbbf24', '#10b981', '#e11d48'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans' } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { ticks: { color: '#94a3b8', stepSize: 1, font: { family: 'JetBrains Mono' } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        function renderHeatmap(issues) {
+            const mapDiv = document.getElementById("heatmapContainer");
+            if (!mapInstance) {
+                const defaultLat = issues.length > 0 ? issues[0].latitude : 16.826907;
+                const defaultLon = issues.length > 0 ? issues[0].longitude : 78.138678;
+
+                mapInstance = L.map('heatmapContainer').setView([defaultLat, defaultLon], 13);
+
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors',
+                    className: 'dark-tiles'
+                }).addTo(mapInstance);
+
+                markersLayer = L.layerGroup().addTo(mapInstance);
+            }
+
+            setTimeout(() => { mapInstance.invalidateSize(); }, 200);
+
+            if (heatLayer) mapInstance.removeLayer(heatLayer);
+            if (markersLayer) markersLayer.clearLayers();
+
+            const heatPoints = [];
+
+            issues.forEach(issue => {
+                if (issue.latitude && issue.longitude) {
+                    const lat = parseFloat(issue.latitude);
+                    const lon = parseFloat(issue.longitude);
+                    const intensity = issue.priority === 'High' ? 1.0 : (issue.priority === 'Medium' ? 0.6 : 0.3);
+                    heatPoints.push([lat, lon, intensity]);
+
+                    const markerColor = issue.status === 'Resolved' ? '#10b981' : (issue.priority === 'High' ? '#f43f5e' : '#f59e0b');
+                    const markerIcon = L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div style="background-color:${markerColor}; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 12px ${markerColor};"></div>`,
+                        iconSize: [16, 16],
+                        iconAnchor: [8, 8]
+                    });
+
+                    const marker = L.marker([lat, lon], { icon: markerIcon });
+                    const popupContent = `
+                        <div style="font-size:12px; min-width:170px; padding: 4px;">
+                            <strong style="color:#38bdf8; font-size: 13px;">#CIVIC-${issue.id}: ${issue.category}</strong><br>
+                            <span style="color:#94a3b8; display: block; margin: 3px 0;">${issue.address || 'Address logged'}</span>
+                            <span style="color:#fbbf24; font-weight:bold;">👥 ${issue.upvotes || 1} Confirmations</span><br>
+                            <span style="color:${markerColor}; font-weight:bold;">Status: ${issue.status || 'Reported'}</span>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    markersLayer.addLayer(marker);
+                }
+            });
+
+            if (heatPoints.length > 0) {
+                heatLayer = L.heatLayer(heatPoints, {
+                    radius: 28,
+                    blur: 20,
+                    maxZoom: 17,
+                    gradient: { 0.2: '#38bdf8', 0.5: '#fbbf24', 0.8: '#f43f5e' }
+                }).addTo(mapInstance);
+
+                mapInstance.setView([heatPoints[0][0], heatPoints[0][1]], 13);
+            }
+        }
+
+        function renderDashboard(issues) {
+            const container = document.getElementById("issuesListContainer");
+            container.innerHTML = "";
+
+            if (issues.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 4rem 2rem; background: var(--bg-surface); border-radius: 16px; border: 1px dashed var(--border-subtle);">
+                    <i class="fa-solid fa-clipboard-check" style="font-size: 3rem; color: var(--primary-accent); margin-bottom: 1rem; display: block;"></i>
+                    No civic hazard logs found for this department scope.
+                </div>`;
+                return;
+            }
+
+            issues.forEach(issue => {
+                const pClass = `badge-${(issue.priority || 'low').toLowerCase()}`;
+                const imgSrc = issue.annotated_image_path ? `/${issue.annotated_image_path}` : `/${issue.image_path}`;
+                const mapsUrl = `https://www.google.com/maps?q=${issue.latitude},${issue.longitude}`;
+                const currentStatus = issue.status || 'Reported';
+                const upvotes = issue.upvotes || 1;
+                const sla = computeSLAStatus(issue.created_at_iso, issue.sla_hours || 48, currentStatus);
+
+                let statusBadgeClass = "status-reported";
+                if (currentStatus === "Processing" || currentStatus === "In Progress") statusBadgeClass = "status-processing";
+                if (currentStatus === "Resolved") statusBadgeClass = "status-resolved";
+
+                const isWorkInProgress = currentStatus === "Processing" || currentStatus === "In Progress";
+                const isFullyResolved = currentStatus === "Resolved";
+
+                const cardHtml = `
+                    <div class="issue-card" id="card-item-${issue.id}">
+                        <div class="issue-card-img-wrap">
+                            <img src="${imgSrc}" onerror="this.src='https://via.placeholder.com/400x200?text=Hazard+Image'" alt="Hazard">
+                            <span style="position: absolute; top: 12px; left: 12px; background: rgba(3, 7, 18, 0.85); color: var(--primary-accent); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; border: 1px solid var(--border-subtle);">
+                                #CIVIC-${issue.id}
+                            </span>
+                            <span class="status-pill ${statusBadgeClass}" style="position: absolute; top: 12px; right: 12px; backdrop-filter: blur(10px);">
+                                <i class="fa-solid ${isFullyResolved ? 'fa-check' : (isWorkInProgress ? 'fa-bolt' : 'fa-clock')}"></i> ${isWorkInProgress ? 'In Progress' : currentStatus}
+                            </span>
+                        </div>
+                        <div class="issue-card-body">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                                <span class="issue-title">${issue.category}</span>
+                                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                    <span class="sla-tag ${sla.class}">${sla.text}</span>
+                                    <span class="badge ${pClass}">${issue.priority}</span>
+                                </div>
+                            </div>
+                            <div class="issue-loc">
+                                <i class="fa-solid fa-location-dot" style="color: var(--primary-accent); margin-top: 2px;"></i> 
+                                <span>${issue.address || `${issue.latitude}, ${issue.longitude}`}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.4rem; font-size: 0.82rem;">
+                                <span style="color: #fbbf24; font-weight: 700;"><i class="fa-solid fa-users"></i> ${upvotes} Confirmations</span>
+                                <a href="${mapsUrl}" target="_blank" style="color: var(--primary-accent); text-decoration: none; font-weight: 700;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Map</a>
+                            </div>
+
+                            ${issue.resolved_image_path ? `
+                                <div class="before-after-grid">
+                                    <div class="before-after-col">
+                                        <img src="${imgSrc}" alt="Before">
+                                        <span class="before-after-tag" style="color: var(--accent-rose);">Before</span>
+                                    </div>
+                                    <div class="before-after-col">
+                                        <img src="/${issue.resolved_image_path}" alt="After">
+                                        <span class="before-after-tag" style="color: var(--accent-emerald);"><i class="fa-solid fa-circle-check"></i> Cleaned</span>
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            <div class="card-actions">
+                                ${!isWorkInProgress && !isFullyResolved ? 
+                                    `<button class="btn-action btn-action-process" onclick="updateIssueStatus(${issue.id}, 'In Progress')">
+                                        <i class="fa-solid fa-person-digging"></i> Mark In Progress
+                                    </button>` : ''}
+                                
+                                ${!isFullyResolved ? 
+                                    `<button class="btn-action btn-action-resolve" onclick="openResolveModal(${issue.id})">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> Verify & Resolve
+                                    </button>` : 
+                                    `<button class="btn-action btn-action-completed" disabled>
+                                        <i class="fa-solid fa-circle-check"></i> Verified Resolved
+                                    </button>`}
+                                
+                                <button class="btn-action btn-action-pdf" onclick="exportSinglePDF(${issue.id})">
+                                    <i class="fa-solid fa-file-pdf"></i> PDF
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        async function updateIssueStatus(issueId, newStatus) {
+            try {
+                const res = await fetch(`${API_BASE}/api/issues/${issueId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!res.ok) throw new Error("Status update failed");
+                await fetchDashboardIssues();
+            } catch (err) {
+                alert("Failed to update status: " + err.message);
+            }
+        }
+
+        function openResolveModal(issueId) {
+            document.getElementById("resolveIssueId").value = issueId;
+            document.getElementById("resolvePhotoInput").value = "";
+            document.getElementById("resolveUploadLabel").innerText = "Select After-Fix photo";
+            document.getElementById("resolveModal").style.display = "flex";
+        }
+
+        function closeResolveModal() {
+            document.getElementById("resolveModal").style.display = "none";
+        }
+
+        const resolveForm = document.getElementById("resolveForm");
+        resolveForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const issueId = document.getElementById("resolveIssueId").value;
+            const file = resolvePhotoInput.files[0];
+
+            if (!file) {
+                alert("Please select a verification photo.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("resolution_image", file);
+
+            const btn = document.getElementById("btnSubmitResolve");
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Running AI Verification...';
+
+            try {
+                const res = await fetch(`${API_BASE}/api/issues/${issueId}/resolve`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error("Resolution verification failed");
+                const data = await res.json();
+
+                closeResolveModal();
+                alert(`AI Verification Completed!\nResult: ${data.is_ai_verified ? 'PASSED (Clean Spot Confirmed)' : 'Audited'}\nConfidence: ${Math.round(data.verification_confidence * 100)}%`);
+                await fetchDashboardIssues();
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-microchip"></i> Run AI Audit & Resolve Ticket';
+            }
+        });
+
+        function exportSinglePDF(issueId) {
+            const issue = allIssuesData.find(i => i.id === issueId);
+            if (!issue) return;
+
+            const printElement = document.createElement('div');
+            printElement.style.padding = '24px';
+            printElement.style.background = '#ffffff';
+            printElement.style.color = '#111827';
+            printElement.style.fontFamily = 'Helvetica, Arial, sans-serif';
+
+            printElement.innerHTML = `
+                <div style="border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="color: #2563eb; margin: 0; font-size: 20px;">MUNICIPAL CIVIC HAZARD INCIDENT REPORT</h2>
+                        <p style="color: #6b7280; font-size: 11px; margin: 2px 0 0 0;">Official AI-Audited Incident Verification Sheet</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="font-size: 13px; font-weight: bold; color: #111;">ID: #CIVIC-${issue.id}</span><br>
+                        <span style="font-size: 11px; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <div style="flex: 1.2;">
+                        <img src="${issue.annotated_image_path ? '/' + issue.annotated_image_path : '/' + issue.image_path}" style="width: 100%; height: 210px; object-fit: cover; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    </div>
+                    <div style="flex: 1; font-size: 12px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">Category:</td><td style="padding: 6px 0; font-weight: bold; color: #111;">${issue.category}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">Citizen Reports:</td><td style="padding: 6px 0; font-weight: bold; color: #d97706;">${issue.upvotes || 1} Confirmations</td></tr>
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">Priority:</td><td style="padding: 6px 0; font-weight: bold; color: ${issue.priority === 'High' ? '#dc2626' : '#d97706'};">${issue.priority}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">Status:</td><td style="padding: 6px 0; font-weight: bold; color: ${issue.status === 'Resolved' ? '#16a34a' : '#2563eb'};">${issue.status || 'Reported'}</td></tr>
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">AI Confidence:</td><td style="padding: 6px 0; font-weight: bold; color: #111;">${Math.round((issue.confidence || 0) * 100)}%</td></tr>
+                            <tr><td style="padding: 6px 0; color: #6b7280; font-weight: bold;">GPS Coordinates:</td><td style="padding: 6px 0; color: #111;">${issue.latitude}, ${issue.longitude}</td></tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="background: #f3f4f6; padding: 12px; border-radius: 6px; font-size: 11px; margin-bottom: 20px;">
+                    <strong style="color: #374151;">Location Address:</strong>
+                    <p style="margin: 4px 0 0 0; color: #4b5563;">${issue.address || 'Address logged by GPS sensor.'}</p>
+                </div>
+
+                <div style="border-top: 1px dashed #d1d5db; padding-top: 12px; display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af;">
+                    <span>Generated by CivicEye AI Platform</span>
+                    <span>Authority Sign / Stamp: ___________________</span>
+                </div>
+            `;
+
+            const opt = {
+                margin: 10,
+                filename: `CIVIC_INCIDENT_${issue.id}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(printElement).save();
+        }
+    </script>
+</body>
+</html>
