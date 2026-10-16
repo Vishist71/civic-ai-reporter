@@ -6,29 +6,27 @@ from datetime import datetime
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+
 from app.database import get_db, engine
 from app.models.issue import Issue
 from app.services.detector import analyze_civic_issue, get_address_from_coords, verify_issue_resolution
 from app.services.alert_service import send_priority_alert
+from app.services.fraud_detector import verify_image_authenticity
+from app.security import create_access_token
+from app.socket_manager import notifier
 from pydantic import BaseModel
 
 router = APIRouter()
 
-# Auto-migrate SQLite schema
 try:
     with engine.connect() as conn:
         conn.execute(text("ALTER TABLE issues ADD COLUMN resolved_image_path VARCHAR"))
-        conn.commit()
-except Exception:
-    pass
-
-try:
-    with engine.connect() as conn:
         conn.execute(text("ALTER TABLE issues ADD COLUMN upvotes INTEGER DEFAULT 1"))
+        conn.execute(text("ALTER TABLE issues ADD COLUMN citizen_name VARCHAR"))
+        conn.execute(text("ALTER TABLE issues ADD COLUMN citizen_phone VARCHAR"))
         conn.commit()
 except Exception:
     pass
-
 
 class StatusUpdateRequest(BaseModel):
     status: str
@@ -44,6 +42,9 @@ MUNICIPAL_USERS = {
     "emergency_officer": {"password": "alert123", "role": "EMERGENCY_SERVICES", "dept": "Disaster, Water & Sewerage Board", "allowed": "Emergency"}
 }
 
+def get_sla_hours(priority: str) -> int:
+    return 24 if (priority or "").lower() == "high" else 48
+
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371000.0
     phi1 = math.radians(lat1)
@@ -54,21 +55,22 @@ def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: fl
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
-def get_sla_hours(priority: str) -> int:
-    return 24 if (priority or "").lower() == "high" else 48
-
 @router.post("/auth/login")
 def municipal_login(req: LoginRequest):
     user = MUNICIPAL_USERS.get(req.username.strip())
     if not user or user["password"] != req.password.strip():
         raise HTTPException(status_code=401, detail="Invalid Municipal Officer credentials.")
+    
+    token_data = {"sub": req.username, "role": user["role"], "dept": user["dept"]}
+    access_token = create_access_token(data=token_data)
+
     return {
         "status": "success",
         "username": req.username,
         "role": user["role"],
         "department": user["dept"],
         "allowed_scope": user["allowed"],
-        "token": f"mock_token_{uuid.uuid4()}"
+        "token": access_token
     }
 
 @router.post("/report")
@@ -78,13 +80,19 @@ async def report_issue(
     latitude: float = Form(...),
     longitude: float = Form(...),
     description: str = Form(None),
+    citizen_name: str = Form(...),     # 👈 NAYA FIELD ADDED
+    citizen_phone: str = Form(...),    # 👈 NAYA FIELD ADDED
     db: Session = Depends(get_db)
 ):
     try:
+        file_ext = os.path.splitext(image.filename)[1].lower() or ".jpg"
+        
+        if file_ext in ['.heic', '.heif', '.tiff']:
+            raise HTTPException(status_code=400, detail="Format Error: HEIC/HEIF images are not supported by the vision engine. Please upload a standard JPG or PNG.")
+
         upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
         os.makedirs(upload_dir, exist_ok=True)
         
-        file_ext = os.path.splitext(image.filename)[1] or ".jpg"
         unique_name = f"{uuid.uuid4()}{file_ext}"
         original_file_path = os.path.join(upload_dir, unique_name)
 
@@ -108,6 +116,7 @@ async def report_issue(
                     db.commit()
                     db.refresh(existing)
 
+                    await notifier.broadcast("DUPLICATE_MERGED")
                     return {
                         "status": "duplicate_merged",
                         "is_duplicate": True,
@@ -134,6 +143,8 @@ async def report_issue(
             confidence=confidence,
             priority=priority,
             description=description,
+            citizen_name=citizen_name,   # 👈 SAVED IN DB
+            citizen_phone=citizen_phone, # 👈 SAVED IN DB
             status="Reported",
             upvotes=1,
             created_at=datetime.utcnow()
@@ -145,6 +156,7 @@ async def report_issue(
         if priority == "High":
             background_tasks.add_task(send_priority_alert, new_issue)
 
+        await notifier.broadcast("NEW_HAZARD")
         return {
             "status": "success",
             "is_duplicate": False,
@@ -159,6 +171,8 @@ async def report_issue(
             "annotated_image_path": annotated_path,
             "created_at": new_issue.created_at.strftime("%Y-%m-%d %H:%M:%S")
         }
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"Error in /report: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -179,6 +193,8 @@ def get_all_issues(db: Session = Depends(get_db)):
             "latitude": i.latitude,
             "longitude": i.longitude,
             "description": i.description,
+            "citizen_name": getattr(i, 'citizen_name', 'Anonymous'),     # 👈 RETURNED IN API
+            "citizen_phone": getattr(i, 'citizen_phone', 'N/A'),       # 👈 RETURNED IN API
             "image_path": i.image_path,
             "annotated_image_path": i.annotated_image_path,
             "resolved_image_path": i.resolved_image_path,
@@ -204,6 +220,8 @@ def get_single_issue(issue_id: int, db: Session = Depends(get_db)):
         "latitude": issue.latitude,
         "longitude": issue.longitude,
         "description": issue.description,
+        "citizen_name": getattr(issue, 'citizen_name', 'Anonymous'),
+        "citizen_phone": getattr(issue, 'citizen_phone', 'N/A'),
         "image_path": issue.image_path,
         "annotated_image_path": issue.annotated_image_path,
         "resolved_image_path": issue.resolved_image_path,
@@ -213,13 +231,14 @@ def get_single_issue(issue_id: int, db: Session = Depends(get_db)):
     }
 
 @router.put("/issues/{issue_id}/status")
-def update_issue_status(issue_id: int, req: StatusUpdateRequest, db: Session = Depends(get_db)):
+async def update_issue_status(issue_id: int, req: StatusUpdateRequest, db: Session = Depends(get_db)):
     issue = db.query(Issue).filter(Issue.id == issue_id).first()
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
     issue.status = req.status
     db.commit()
     db.refresh(issue)
+    await notifier.broadcast("STATUS_CHANGED")
     return {"status": "success", "issue_id": issue.id, "new_status": issue.status}
 
 @router.post("/issues/{issue_id}/resolve")
@@ -235,7 +254,11 @@ async def resolve_issue_with_verification(
     upload_dir = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
     os.makedirs(upload_dir, exist_ok=True)
 
-    file_ext = os.path.splitext(resolution_image.filename)[1] or ".jpg"
+    file_ext = os.path.splitext(resolution_image.filename)[1].lower() or ".jpg"
+    
+    if file_ext in ['.heic', '.heif']:
+        raise HTTPException(status_code=400, detail="Format Error: HEIC/HEIF images are not supported. Please upload a standard JPG or PNG.")
+
     unique_name = f"resolved_{uuid.uuid4()}{file_ext}"
     saved_path = os.path.join(upload_dir, unique_name)
 
@@ -249,6 +272,7 @@ async def resolve_issue_with_verification(
     db.commit()
     db.refresh(issue)
 
+    await notifier.broadcast("TICKET_RESOLVED")
     return {
         "status": "success",
         "issue_id": issue.id,
